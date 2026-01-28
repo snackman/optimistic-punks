@@ -105,6 +105,7 @@ async function main() {
       hasFrown: accessories.includes('Frown'),
       lipstickTrait: lipstickTrait || null,
       hasLuxuriousBeard: accessories.includes('Luxurious Beard'),
+      hasNormalBeard: accessories.includes('Normal Beard'),
     };
   }
 
@@ -226,8 +227,9 @@ async function main() {
         malesWithSmile++;
       } else {
         // No existing smile - overlay the smile sprite
-        // For Luxurious Beard, use mouth color instead of black
-        const useColor = punk.hasLuxuriousBeard && maleMouthColors[punk.skinTone]
+        // For Luxurious Beard or Normal Beard, use mouth color instead of black
+        const useMouthColor = (punk.hasLuxuriousBeard || punk.hasNormalBeard) && maleMouthColors[punk.skinTone];
+        const useColor = useMouthColor
           ? Jimp.rgbaToInt(maleMouthColors[punk.skinTone].r, maleMouthColors[punk.skinTone].g, maleMouthColors[punk.skinTone].b, 255)
           : null;
 
