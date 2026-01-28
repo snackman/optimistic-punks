@@ -27,6 +27,21 @@ const FEMALE_BASE_IDS = {
   'Albino': 25,
 };
 
+// Male base sprite IDs by skin tone
+const MALE_BASE_IDS = {
+  'Light': 7,
+  'Medium': 6,
+  'Dark': 5,
+  'Albino': 8,
+};
+
+// Frown pixels to remove (relative to punk position)
+// The frown adds black pixels at the mouth corners curving down
+const FROWN_PIXELS = [
+  {x: 10, y: 19},  // left corner of frown (going down from mouth)
+  {x: 15, y: 20},  // right corner of frown (going down from mouth)
+];
+
 // Parse CSV manually
 function parseCSV(content) {
   const lines = content.split('\n').filter(l => l.trim());
@@ -75,6 +90,7 @@ async function main() {
       skinTone: record.skinTone,
       accessories,
       hasSmile: accessories.includes('Smile'),
+      hasFrown: accessories.includes('Frown'),
     };
   }
 
@@ -91,6 +107,23 @@ async function main() {
     );
     const rgba = Jimp.intToRGBA(color);
     femaleMouthColors[skinTone] = rgba;
+    console.log(`  ${skinTone}: RGB(${rgba.r}, ${rgba.g}, ${rgba.b})`);
+  }
+
+  // Extract male skin colors from base sprites (for frown removal)
+  console.log('Sampling male skin colors...');
+  const maleSkinColors = {};
+  for (const [skinTone, spriteId] of Object.entries(MALE_BASE_IDS)) {
+    const row = Math.floor(spriteId / SPRITESHEET_COLS);
+    const col = spriteId % SPRITESHEET_COLS;
+
+    // Sample from cheek area (x=10, y=15) which is reliable skin
+    const color = spriteSheet.getPixelColor(
+      col * SPRITE_SIZE + 10,
+      row * SPRITE_SIZE + 15
+    );
+    const rgba = Jimp.intToRGBA(color);
+    maleSkinColors[skinTone] = rgba;
     console.log(`  ${skinTone}: RGB(${rgba.r}, ${rgba.g}, ${rgba.b})`);
   }
 
@@ -111,6 +144,7 @@ async function main() {
 
   let malesWithoutSmile = 0;
   let malesWithSmile = 0;
+  let malesWithFrown = 0;
   let femalesCount = 0;
 
   for (let punkId = 0; punkId < TOTAL_PUNKS; punkId++) {
@@ -134,6 +168,21 @@ async function main() {
     const isFemale = punk.gender === 'Female';
 
     if (isMale) {
+      // Remove frown if present
+      if (punk.hasFrown) {
+        const skinColor = maleSkinColors[punk.skinTone];
+        if (skinColor) {
+          for (const fp of FROWN_PIXELS) {
+            outputImage.setPixelColor(
+              Jimp.rgbaToInt(skinColor.r, skinColor.g, skinColor.b, 255),
+              dstX + fp.x,
+              dstY + fp.y
+            );
+          }
+        }
+        malesWithFrown++;
+      }
+
       if (punk.hasSmile) {
         // Already has smile - add black pixel at (15, 17)
         const pixelX = dstX + 15;
@@ -174,6 +223,7 @@ async function main() {
   console.log('\nStats:');
   console.log(`  Males without smile (added smile sprite): ${malesWithoutSmile}`);
   console.log(`  Males with smile (added black pixel): ${malesWithSmile}`);
+  console.log(`  Males with frown (removed frown pixels): ${malesWithFrown}`);
   console.log(`  Females (added mouth pixel): ${femalesCount}`);
 
   // Save output
