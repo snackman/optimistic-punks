@@ -215,8 +215,8 @@ async function main() {
       }
 
       if (punk.hasSmile) {
-        // Already has smile - add black pixel at (15, 17)
-        const pixelX = dstX + 15;
+        // Already has smile - add black pixel at (14, 17) - one left of original position
+        const pixelX = dstX + 14;
         const pixelY = dstY + SMILE_Y;
         outputImage.setPixelColor(Jimp.rgbaToInt(0, 0, 0, 255), pixelX, pixelY);
         malesWithSmile++;
