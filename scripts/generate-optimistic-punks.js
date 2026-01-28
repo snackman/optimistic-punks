@@ -42,6 +42,16 @@ const FROWN_PIXELS = [
   {x: 15, y: 20},  // right corner of frown (going down from mouth)
 ];
 
+// Female lipstick sprite IDs
+const LIPSTICK_SPRITE_IDS = {
+  'Black Lipstick': 363,
+  'Hot Lipstick': 364,
+  'Purple Lipstick': 365,
+};
+
+// Lipstick traits list
+const LIPSTICK_TRAITS = ['Black Lipstick', 'Hot Lipstick', 'Purple Lipstick'];
+
 // Parse CSV manually
 function parseCSV(content) {
   const lines = content.split('\n').filter(l => l.trim());
@@ -84,6 +94,9 @@ async function main() {
     const accessories = record.accessories
       ? record.accessories.split('/').map(a => a.trim()).filter(a => a)
       : [];
+    // Check for lipstick trait
+    const lipstickTrait = accessories.find(a => LIPSTICK_TRAITS.includes(a));
+
     punks[id] = {
       id,
       gender: record.gender,
@@ -91,6 +104,7 @@ async function main() {
       accessories,
       hasSmile: accessories.includes('Smile'),
       hasFrown: accessories.includes('Frown'),
+      lipstickTrait: lipstickTrait || null,
     };
   }
 
@@ -125,6 +139,23 @@ async function main() {
     const rgba = Jimp.intToRGBA(color);
     maleSkinColors[skinTone] = rgba;
     console.log(`  ${skinTone}: RGB(${rgba.r}, ${rgba.g}, ${rgba.b})`);
+  }
+
+  // Extract lipstick colors from sprites
+  console.log('Sampling lipstick colors...');
+  const lipstickColors = {};
+  for (const [name, spriteId] of Object.entries(LIPSTICK_SPRITE_IDS)) {
+    const row = Math.floor(spriteId / SPRITESHEET_COLS);
+    const col = spriteId % SPRITESHEET_COLS;
+
+    // Sample from the mouth area of the lipstick sprite (x=12, y=18)
+    const color = spriteSheet.getPixelColor(
+      col * SPRITE_SIZE + 12,
+      row * SPRITE_SIZE + 18
+    );
+    const rgba = Jimp.intToRGBA(color);
+    lipstickColors[name] = rgba;
+    console.log(`  ${name}: RGB(${rgba.r}, ${rgba.g}, ${rgba.b})`);
   }
 
   // Extract smile sprite
@@ -206,12 +237,19 @@ async function main() {
       }
     } else if (isFemale) {
       // Add mouth-colored pixel at (10, 17)
-      const mouthColor = femaleMouthColors[punk.skinTone];
-      if (mouthColor) {
+      // Use lipstick color if the punk has lipstick, otherwise use base mouth color
+      let smileColor;
+      if (punk.lipstickTrait && lipstickColors[punk.lipstickTrait]) {
+        smileColor = lipstickColors[punk.lipstickTrait];
+      } else {
+        smileColor = femaleMouthColors[punk.skinTone];
+      }
+
+      if (smileColor) {
         const pixelX = dstX + 10;
         const pixelY = dstY + SMILE_Y;
         outputImage.setPixelColor(
-          Jimp.rgbaToInt(mouthColor.r, mouthColor.g, mouthColor.b, 255),
+          Jimp.rgbaToInt(smileColor.r, smileColor.g, smileColor.b, 255),
           pixelX,
           pixelY
         );
