@@ -1,0 +1,12 @@
+{
+  "name": "optimistic-punks",
+  "version": "1.0.0",
+  "description": "CryptoPunks with smiles added to all punks",
+  "main": "scripts/generate-optimistic-punks.js",
+  "scripts": {
+    "generate": "node scripts/generate-optimistic-punks.js"
+  },
+  "dependencies": {
+    "jimp": "^0.16.1"
+  }
+}

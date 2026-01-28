@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Optimistic Punks</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #1a1a2e;
+      color: #fff;
+      margin: 0;
+      padding: 20px;
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 10px;
+    }
+    .controls {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 20px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+    button {
+      background: #4a4a6a;
+      color: #fff;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 16px;
+    }
+    button:hover { background: #5a5a7a; }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+    .page-info { font-size: 18px; }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+      gap: 10px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    .punk {
+      background: #2a2a4a;
+      border-radius: 8px;
+      padding: 10px;
+      text-align: center;
+    }
+    .punk canvas {
+      image-rendering: pixelated;
+      width: 96px;
+      height: 96px;
+    }
+    .punk-id {
+      margin-top: 5px;
+      font-size: 14px;
+      color: #aaa;
+    }
+    .jump-form {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+    .jump-form input {
+      width: 80px;
+      padding: 8px;
+      border-radius: 5px;
+      border: none;
+      font-size: 16px;
+    }
+    .loading {
+      text-align: center;
+      font-size: 24px;
+      padding: 50px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Optimistic Punks</h1>
+  <div class="controls">
+    <button id="prevBtn" onclick="prevPage()">← Previous</button>
+    <span class="page-info">
+      Page <span id="currentPage">1</span> of <span id="totalPages">200</span>
+    </span>
+    <button id="nextBtn" onclick="nextPage()">Next →</button>
+    <div class="jump-form">
+      <input type="number" id="jumpInput" min="0" max="9999" placeholder="Punk #">
+      <button onclick="jumpToPunk()">Go</button>
+    </div>
+  </div>
+  <div id="grid" class="grid">
+    <div class="loading">Loading punks...</div>
+  </div>
+
+  <script>
+    const SPRITE_SIZE = 24;
+    const PUNKS_COLS = 100;
+    const PUNKS_PER_PAGE = 50;
+    const TOTAL_PUNKS = 10000;
+    const TOTAL_PAGES = Math.ceil(TOTAL_PUNKS / PUNKS_PER_PAGE);
+
+    let currentPage = 0;
+    let punksImage = null;
+
+    async function init() {
+      punksImage = new Image();
+      punksImage.onload = () => {
+        document.getElementById('totalPages').textContent = TOTAL_PAGES;
+        renderPage();
+      };
+      punksImage.src = 'data/optimistic-punks.png';
+    }
+
+    function extractPunk(punkId) {
+      const row = Math.floor(punkId / PUNKS_COLS);
+      const col = punkId % PUNKS_COLS;
+      const canvas = document.createElement('canvas');
+      canvas.width = SPRITE_SIZE;
+      canvas.height = SPRITE_SIZE;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(
+        punksImage,
+        col * SPRITE_SIZE, row * SPRITE_SIZE, SPRITE_SIZE, SPRITE_SIZE,
+        0, 0, SPRITE_SIZE, SPRITE_SIZE
+      );
+      return canvas;
+    }
+
+    function renderPage() {
+      const grid = document.getElementById('grid');
+      grid.innerHTML = '';
+
+      const startId = currentPage * PUNKS_PER_PAGE;
+      const endId = Math.min(startId + PUNKS_PER_PAGE, TOTAL_PUNKS);
+
+      for (let punkId = startId; punkId < endId; punkId++) {
+        const div = document.createElement('div');
+        div.className = 'punk';
+
+        const canvas = extractPunk(punkId);
+        div.appendChild(canvas);
+
+        const idLabel = document.createElement('div');
+        idLabel.className = 'punk-id';
+        idLabel.textContent = `#${punkId}`;
+        div.appendChild(idLabel);
+
+        grid.appendChild(div);
+      }
+
+      document.getElementById('currentPage').textContent = currentPage + 1;
+      document.getElementById('prevBtn').disabled = currentPage === 0;
+      document.getElementById('nextBtn').disabled = currentPage >= TOTAL_PAGES - 1;
+    }
+
+    function nextPage() {
+      if (currentPage < TOTAL_PAGES - 1) {
+        currentPage++;
+        renderPage();
+        window.scrollTo(0, 0);
+      }
+    }
+
+    function prevPage() {
+      if (currentPage > 0) {
+        currentPage--;
+        renderPage();
+        window.scrollTo(0, 0);
+      }
+    }
+
+    function jumpToPunk() {
+      const input = document.getElementById('jumpInput');
+      const punkId = parseInt(input.value);
+      if (!isNaN(punkId) && punkId >= 0 && punkId < TOTAL_PUNKS) {
+        currentPage = Math.floor(punkId / PUNKS_PER_PAGE);
+        renderPage();
+        window.scrollTo(0, 0);
+      }
+      input.value = '';
+    }
+
+    document.getElementById('jumpInput').addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') jumpToPunk();
+    });
+
+    init();
+  </script>
+</body>
+</html>
