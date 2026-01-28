@@ -35,11 +35,10 @@ const MALE_BASE_IDS = {
   'Albino': 8,
 };
 
-// Frown pixels to remove (relative to punk position)
-// The frown adds black pixels at the mouth corners curving down
+// Frown pixel to remove (relative to punk position)
+// Only remove the left frown corner - (15, 20) is part of the chin outline
 const FROWN_PIXELS = [
   {x: 10, y: 19},  // left corner of frown (going down from mouth)
-  {x: 15, y: 20},  // right corner of frown (going down from mouth)
 ];
 
 // Female lipstick sprite IDs
@@ -204,7 +203,7 @@ async function main() {
     const isFemale = punk.gender === 'Female';
 
     if (isMale) {
-      // Remove frown if present
+      // Remove frown if present - only remove frown, don't add smile
       if (punk.hasFrown) {
         const skinColor = maleSkinColors[punk.skinTone];
         if (skinColor) {
@@ -217,16 +216,14 @@ async function main() {
           }
         }
         malesWithFrown++;
-      }
-
-      if (punk.hasSmile) {
+      } else if (punk.hasSmile) {
         // Already has smile - add black pixel at (14, 17) - one left of original position
         const pixelX = dstX + 14;
         const pixelY = dstY + SMILE_Y;
         outputImage.setPixelColor(Jimp.rgbaToInt(0, 0, 0, 255), pixelX, pixelY);
         malesWithSmile++;
       } else {
-        // No smile - overlay the smile sprite
+        // No smile and no frown - overlay the smile sprite
         // For Luxurious Beard, use mouth color instead of black
         const useColor = punk.hasLuxuriousBeard && maleMouthColors[punk.skinTone]
           ? Jimp.rgbaToInt(maleMouthColors[punk.skinTone].r, maleMouthColors[punk.skinTone].g, maleMouthColors[punk.skinTone].b, 255)
