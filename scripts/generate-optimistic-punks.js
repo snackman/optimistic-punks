@@ -203,7 +203,7 @@ async function main() {
     const isFemale = punk.gender === 'Female';
 
     if (isMale) {
-      // Remove frown if present - only remove frown, don't add smile
+      // Remove frown if present
       if (punk.hasFrown) {
         const skinColor = maleSkinColors[punk.skinTone];
         if (skinColor) {
@@ -216,14 +216,16 @@ async function main() {
           }
         }
         malesWithFrown++;
-      } else if (punk.hasSmile) {
+      }
+
+      if (punk.hasSmile) {
         // Already has smile - add black pixel at (14, 17) - one left of original position
         const pixelX = dstX + 14;
         const pixelY = dstY + SMILE_Y;
         outputImage.setPixelColor(Jimp.rgbaToInt(0, 0, 0, 255), pixelX, pixelY);
         malesWithSmile++;
       } else {
-        // No smile and no frown - overlay the smile sprite
+        // No existing smile - overlay the smile sprite
         // For Luxurious Beard, use mouth color instead of black
         const useColor = punk.hasLuxuriousBeard && maleMouthColors[punk.skinTone]
           ? Jimp.rgbaToInt(maleMouthColors[punk.skinTone].r, maleMouthColors[punk.skinTone].g, maleMouthColors[punk.skinTone].b, 255)
