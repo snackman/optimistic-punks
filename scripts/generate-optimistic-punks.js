@@ -105,6 +105,7 @@ async function main() {
       hasSmile: accessories.includes('Smile'),
       hasFrown: accessories.includes('Frown'),
       lipstickTrait: lipstickTrait || null,
+      hasLuxuriousBeard: accessories.includes('Luxurious Beard'),
     };
   }
 
@@ -140,6 +141,10 @@ async function main() {
     maleSkinColors[skinTone] = rgba;
     console.log(`  ${skinTone}: RGB(${rgba.r}, ${rgba.g}, ${rgba.b})`);
   }
+
+  // Male mouth colors use the same lip colors as females (for Luxurious Beard)
+  // Males don't have distinct lip color on base sprite, so we reuse female lip colors
+  const maleMouthColors = femaleMouthColors;
 
   // Extract lipstick colors from sprites
   console.log('Sampling lipstick colors...');
@@ -222,6 +227,11 @@ async function main() {
         malesWithSmile++;
       } else {
         // No smile - overlay the smile sprite
+        // For Luxurious Beard, use mouth color instead of black
+        const useColor = punk.hasLuxuriousBeard && maleMouthColors[punk.skinTone]
+          ? Jimp.rgbaToInt(maleMouthColors[punk.skinTone].r, maleMouthColors[punk.skinTone].g, maleMouthColors[punk.skinTone].b, 255)
+          : null;
+
         // Composite the smile sprite onto the punk
         for (let sy = 0; sy < SPRITE_SIZE; sy++) {
           for (let sx = 0; sx < SPRITE_SIZE; sx++) {
@@ -229,7 +239,12 @@ async function main() {
             const rgba = Jimp.intToRGBA(spriteColor);
             // Only draw non-transparent pixels
             if (rgba.a > 0) {
-              outputImage.setPixelColor(spriteColor, dstX + sx, dstY + sy);
+              // For Luxurious Beard, replace black with mouth color
+              if (useColor && rgba.r === 0 && rgba.g === 0 && rgba.b === 0) {
+                outputImage.setPixelColor(useColor, dstX + sx, dstY + sy);
+              } else {
+                outputImage.setPixelColor(spriteColor, dstX + sx, dstY + sy);
+              }
             }
           }
         }
